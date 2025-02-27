@@ -14,7 +14,7 @@ import os
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
 load_dotenv()
-router = APIRouter(prefix="/auth", tags=["auth"])
+router = APIRouter(prefix="/auth", tags=["Auth"])
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = os.getenv("ALGORITHM")
 
@@ -50,7 +50,7 @@ def get_current_user(
         if "id" not in payload or "email" not in payload or "role" not in payload:
             raise HTTPException(status_code=400, detail="Could not validate user")
         return payload
-    
+
     except jwt.ExpiredSignatureError:
         raise HTTPException(
             status_code=401,

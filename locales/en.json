@@ -6,6 +6,18 @@
     "product_updated": "Product updated successfully",
     "product_deleted": "Product deleted successfully",
     "price_error": "Price must be greater than zero",
-    "admin_required": "Only admins are allowed to access this endpoint"
+    "admin_required": "Only admins are allowed to access this endpoint",
+
+    "added_to_cart":"product added to cart successfully",
+    "failed_to_add_in_cart":" Failed to add product in cart",
+    "removed_from_cart":"product removed from cart successfully",
+    "product_not_found_in_cart":"product not found in cart",
+    "failed_to_remove_from_cart":"product failed to remove from cart",
+    "decrease_product_cart_quantity":"Product quantity decreased successfully",
+    "cart_empty":"cart is empty",
+    "cart_not_empty":"cart is not empty",
+    "cart_updated":"cart updated successfully",
+    "failed_to_update_cart":"cart failed to update"
+    
   }
   
