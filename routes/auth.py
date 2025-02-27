@@ -40,6 +40,26 @@ class UserCreate(BaseModel):
     role: Role = Role.customer
 
 
+def get_current_user(
+    token: str = Depends(OAuth2PasswordBearer(tokenUrl="/auth/login")),
+):
+    if not token:
+        raise HTTPException(status_code=403, detail="No token")
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        if "id" not in payload or "email" not in payload or "role" not in payload:
+            raise HTTPException(status_code=400, detail="Could not validate user")
+        return payload
+    
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(
+            status_code=401,
+            detail="Token has expired",
+        )
+    except jwt.JWTError:
+        raise HTTPException(status_code=400, detail="Invalid token")
+
+
 def validation(user: UserCreate, db: db_dependency):
     existingUser = db.query(User).filter(User.email == user.email).first()
     if existingUser:
