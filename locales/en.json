@@ -1,0 +1,11 @@
+{
+    "product_list_fetched": "Product list fetched successfully",
+    "product_added": "Product added successfully",
+    "failed_to_add_product":"Product failed to add",
+    "product_not_found": "Product not found",
+    "product_updated": "Product updated successfully",
+    "product_deleted": "Product deleted successfully",
+    "price_error": "Price must be greater than zero",
+    "admin_required": "Only admins are allowed to access this endpoint"
+  }
+  

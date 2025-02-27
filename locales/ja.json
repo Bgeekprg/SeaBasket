@@ -1,0 +1,10 @@
+{
+  "product_list_fetched": "商品リストが正常に取得されました",
+  "product_added": "商品が正常に追加されました",
+  "failed_to_add_product": "商品を追加できませんでした",
+  "product_not_found": "商品が見つかりません",
+  "product_updated": "商品が正常に更新されました",
+  "product_deleted": "商品が正常に削除されました",
+  "price_error": "価格はゼロより大きくなければなりません",
+  "admin_required": "管理者のみがこのエンドポイントにアクセスできます"
+}
