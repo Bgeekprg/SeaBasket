@@ -17,7 +17,12 @@
     "cart_empty":"cart is empty",
     "cart_not_empty":"cart is not empty",
     "cart_updated":"cart updated successfully",
-    "failed_to_update_cart":"cart failed to update"
+    "failed_to_update_cart":"cart failed to update",
+
+    "order_not_found":"No order is available.",
+    "order_status_update_success":"Order status updated successfully.",
+    "payment_status_update_success":"payment status updated successfully."
+
     
   }
   
