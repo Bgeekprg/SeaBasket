@@ -21,7 +21,9 @@
 
     "order_not_found":"No order is available.",
     "order_status_update_success":"Order status updated successfully.",
-    "payment_status_update_success":"payment status updated successfully."
+    "payment_status_update_success":"payment status updated successfully.",
+
+    "user_not_found":"User not found."
 
     
   }
