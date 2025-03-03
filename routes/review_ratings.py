@@ -35,33 +35,48 @@ async def get_review_ratings(product_id: int, db: db_dependency):
     return reviews
 
 
-@router.post("/add_review&ratings")
+@router.post("/add_review&ratings", status_code=204)
 async def add_review_ratings(
     request: Request, db: db_dependency, user: user_dependency, review: ReviewRequest
 ):
     db.begin()
-    try:
-        product = db.query(Product).filter(Product.id == review.productId).first()
-        if not product:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Product not found"
-            )
-        order = (
-            db.query(OrderDetail)
-            .join(Order)
-            .filter(
-                Order.userId == user["id"], OrderDetail.productId == review.productId
-            )
-            .first()
+    localization = request.state.localization
+    product = db.query(Product).filter(Product.id == review.productId).first()
+    if not product:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=localization.gettext("product_not_found"),
         )
-        if not order:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="You had not ordered this product so you are not allowed to give review.",
-            )
-        if review.rating < 1 or review.rating > 5:
-            return "Rating should be between 0 and 5"
+    order = (
+        db.query(OrderDetail)
+        .join(Order)
+        .filter(Order.userId == user["id"], OrderDetail.productId == review.productId)
+        .first()
+    )
+    if not order:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=localization.gettext("not_allowed_for_review"),
+        )
+    if review.rating < 1 or review.rating > 5:
+        raise HTTPException(
+            status_code=422, detail=localization.gettext("rating_valid_range_error")
+        )
 
+    existing_review = (
+        db.query(Review)
+        .filter(Review.userId == user["id"], Review.productId == review.productId)
+        .first()
+    )
+    if existing_review:
+        existing_review.reviewText = review.reviewText
+        existing_review.rating = review.rating
+        db.add(existing_review)
+        db.commit()
+        await get_average_rating(db, review.productId)
+        return {"message": localization.gettext("review_rating_updated_success")}
+
+    else:
         new_review = Review(
             productId=review.productId,
             userId=user["id"],
@@ -72,9 +87,7 @@ async def add_review_ratings(
         db.commit()
         await get_average_rating(db, review.productId)
 
-        return "Review and rating added successfully."
-    except:
-        db.rollback()
+        return {"message": localization.gettext("review_rating_add_success")}
 
 
 async def get_average_rating(db: db_dependency, product_id: int):

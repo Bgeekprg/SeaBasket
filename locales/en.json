@@ -23,8 +23,12 @@
     "order_status_update_success":"Order status updated successfully.",
     "payment_status_update_success":"payment status updated successfully.",
 
-    "user_not_found":"User not found."
+    "user_not_found":"User not found.",
 
+    "review_rating_add_success":"Review and rating added successfully.",
+    "review_rating_updated_success":"Your review and rating has been updated successfully.",
+    "not_allowed_for_review":"You had not ordered this product so you are not allowed to give review.",
+    "rating_valid_range_error":"Rating should be between 0 and 5"
     
   }
   
