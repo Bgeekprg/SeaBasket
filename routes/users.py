@@ -1,5 +1,15 @@
+from datetime import datetime, timedelta
+import secrets
 from typing import Annotated, List, Optional
-from fastapi import APIRouter, Depends, Form, HTTPException, Request, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    Form,
+    HTTPException,
+    Request,
+    status,
+    BackgroundTasks,
+)
 from pydantic import BaseModel, Field, EmailStr
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, text
@@ -8,6 +18,13 @@ from routes.auth import get_current_user
 from models import User
 from routes.auth import bcrypt_context
 from fastapi_mail import FastMail, MessageSchema, ConnectionConfig
+from dotenv import load_dotenv
+from fastapi.templating import Jinja2Templates
+import os
+
+load_dotenv()
+SECRET_KEY = os.getenv("SECRET_KEY")
+templates = Jinja2Templates(directory="./templates")
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -20,8 +37,24 @@ def get_db():
         db.close()
 
 
+conf = ConnectionConfig(
+    MAIL_USERNAME=os.getenv("EMAIL_HOST_USER"),
+    MAIL_PASSWORD=os.getenv("EMAIL_HOST_PASSWORD"),
+    MAIL_FROM="userfastapi@gmail.com",
+    MAIL_PORT=2525,
+    MAIL_SERVER="sandbox.smtp.mailtrap.io",
+    MAIL_STARTTLS=True,
+    MAIL_SSL_TLS=False,
+    USE_CREDENTIALS=True,
+)
+
+
 db_dependency = Annotated[Session, Depends(get_db)]
 user_dependency = Annotated[dict, Depends(get_current_user)]
+
+
+class ForgotEmailSchema(BaseModel):
+    email: List[EmailStr]
 
 
 class UserUpdate(BaseModel):
@@ -108,3 +141,68 @@ async def change_password(
     db.refresh(user)
 
     return {"message": "Password updated successfully"}
+
+
+reset_tokens = {}
+
+
+@router.post("/forgot_password")
+async def forgot_password(
+    email: EmailStr, request: Request, db: Session = Depends(get_db)
+):
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    reset_token = secrets.token_urlsafe(32)
+    reset_tokens[reset_token] = {
+        "email": email,
+        "expires": datetime.now() + timedelta(hours=1),
+    }
+
+    reset_link = f"{request.base_url}users/reset-password/{reset_token}"
+
+    html_content = f"Click the following link to reset your password: {reset_link}"
+
+    message = MessageSchema(
+        subject="Password Reset Request",
+        recipients=[email],
+        body=html_content,
+        subtype="html",
+    )
+
+    fm = FastMail(conf)
+    await fm.send_message(message)
+
+    return {"message": "Password reset email sent successfully"}
+
+
+@router.get("/reset-password/{token}")
+async def reset_password_get(token: str, request: Request):
+    token_data = reset_tokens.get(token)
+    if not token_data or token_data["expires"] < datetime.now():
+        raise HTTPException(status_code=400, detail="Invalid or expired token")
+
+    return templates.TemplateResponse(
+        "reset_password.html", {"request": request, "token": token}
+    )
+
+
+@router.post("/reset-password")
+async def reset_password_post(
+    token: str = Form(...), new_password: str = Form(...), db: Session = Depends(get_db)
+):
+    token_data = reset_tokens.get(token)
+    if not token_data or token_data["expires"] < datetime.utcnow():
+        raise HTTPException(status_code=400, detail="Invalid or expired token")
+
+    user = db.query(User).filter(User.email == token_data["email"]).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user.password = bcrypt_context.hash(new_password)
+    db.commit()
+
+    reset_tokens.pop(token, None)
+
+    return {"message": "Password has been reset successfully"}
