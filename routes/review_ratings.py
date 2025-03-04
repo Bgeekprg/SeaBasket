@@ -29,13 +29,13 @@ class ReviewRequest(BaseModel):
     reviewText: str
 
 
-@router.get("{product_id}")
+@router.get("/{product_id}")
 async def get_review_ratings(product_id: int, db: db_dependency):
     reviews = db.query(Review).filter(Review.productId == product_id).all()
     return reviews
 
 
-@router.post("/add_review&ratings", status_code=204)
+@router.post("/", status_code=204)
 async def add_review_ratings(
     request: Request, db: db_dependency, user: user_dependency, review: ReviewRequest
 ):
