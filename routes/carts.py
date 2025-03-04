@@ -69,7 +69,7 @@ async def get_cart(request: Request, db: db_dependency, user: user_dependency):
     return response
 
 
-@router.get("/add_product/{product_id}")
+@router.post("/{product_id}")
 async def add_product_in_cart(
     request: Request, db: db_dependency, product_id: int, user: user_dependency
 ):
@@ -105,7 +105,7 @@ async def add_product_in_cart(
         )
 
 
-@router.delete("/remove/{cart_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{cart_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def remove_product_from_cart(
     cart_id: int, request: Request, db: db_dependency, user: user_dependency
 ):
