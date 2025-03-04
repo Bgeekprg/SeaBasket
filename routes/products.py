@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, text
 from database import SessionLocal
-from models import Product, ProductImage
+from models import OrderDetail, Product, ProductImage
 from routes.auth import get_current_user
 
 
@@ -242,6 +242,12 @@ async def delete_product(
         admin_required(user)
         data = db.query(Product).filter(Product.id == id).first()
         if data:
+            order_details = (
+                db.query(OrderDetail).filter(OrderDetail.productId == id).first()
+            )
+            if order_details:
+                return {"error": localization.gettext("product_has_orders")}
+
             db.delete(data)
             db.commit()
             return {"success": localization.gettext("product_deleted")}
