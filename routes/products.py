@@ -209,7 +209,7 @@ async def update_product(
         return {"error": f"Failed to update product: {str(e)}"}
 
 
-@router.delete("/delete/{id}")
+@router.delete("/{id}")
 async def delete_product(
     request: Request, db: db_dependency, id: int, user: user_dependency
 ):
