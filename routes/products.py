@@ -269,7 +269,7 @@ async def add_product_images(
         db.add(image)
         db.commit()
         db.refresh(image)
-        return {"success": "Product image added successfully"}
+        return {"success": localization.gettext("product_image_add_success")}
     else:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
