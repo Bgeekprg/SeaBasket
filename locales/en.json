@@ -31,6 +31,7 @@
     "rating_valid_range_error":"Rating should be between 0 and 5",
     
     "not_authorized":"Not authorized to perform this operation.",
-    "product_images_not_found":"Product images are not available."
+    "product_images_not_found":"Product images are not available.",
+    "product_image_add_success":"Product image is added successfully"
   }
   
