@@ -52,7 +52,7 @@ async def get_category(db: db_dependency, category_id: int):
     return db.query(Category).filter(Category.id == category_id).first()
 
 
-@router.post("/add")
+@router.post("/")
 async def create_category(db: db_dependency, category: CategoryCreate):
     db_category = Category(
         categoryName=category.categoryName,
@@ -64,7 +64,7 @@ async def create_category(db: db_dependency, category: CategoryCreate):
     return db_category
 
 
-@router.put("/update/{id}")
+@router.put("/{id}")
 def update_category(db: db_dependency, category_id: int, category: CategoryUpdate):
     db_category = db.query(Category).filter(Category.id == category_id).first()
     if db_category:
@@ -77,7 +77,7 @@ def update_category(db: db_dependency, category_id: int, category: CategoryUpdat
     return db_category
 
 
-@router.delete("/delete/{id}")
+@router.delete("/{id}")
 def delete_category(db: db_dependency, category_id: int):
     db_category = db.query(Category).filter(Category.id == category_id).first()
     if db_category:
