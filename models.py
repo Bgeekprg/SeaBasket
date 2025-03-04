@@ -71,7 +71,7 @@ class Product(Base):
 
 
 class ProductImage(Base):
-    __tablename__ = "productImages"
+    __tablename__ = "product_images"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     productId = Column(Integer, ForeignKey("products.id"), nullable=False)
@@ -151,6 +151,9 @@ class Review(Base):
     rating = Column(DECIMAL(3, 2), nullable=True)
     reviewText = Column(TEXT, nullable=True)
     createdAt = Column(TIMESTAMP, default=func.current_timestamp())
+    updatedAt = Column(
+        TIMESTAMP, default=func.current_timestamp(), onupdate=func.current_timestamp()
+    )
 
     product = relationship("Product", backref="reviews", cascade="all,delete")
     user = relationship("User", backref="reviews", cascade="all,delete")
