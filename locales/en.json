@@ -32,6 +32,7 @@
     
     "not_authorized":"Not authorized to perform this operation.",
     "product_images_not_found":"Product images are not available.",
-    "product_image_add_success":"Product image is added successfully"
+    "product_image_add_success":"Product image is added successfully",
+    "product_has_orders":"You can't delete product because product has a orders."
   }
   
