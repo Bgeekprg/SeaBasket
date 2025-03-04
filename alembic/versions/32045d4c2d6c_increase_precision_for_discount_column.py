@@ -20,13 +20,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.alter_column(
-        "order_details",
-        "discount",
-        type_=sa.Numeric(7, 2),
-        existing_type=sa.Numeric(5, 2),
-        existing_nullable=False,
-    )
+    pass
 
 
 def downgrade() -> None:
