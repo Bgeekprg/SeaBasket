@@ -28,7 +28,8 @@
     "review_rating_add_success":"Review and rating added successfully.",
     "review_rating_updated_success":"Your review and rating has been updated successfully.",
     "not_allowed_for_review":"You had not ordered this product so you are not allowed to give review.",
-    "rating_valid_range_error":"Rating should be between 0 and 5"
+    "rating_valid_range_error":"Rating should be between 0 and 5",
     
+    "not_authorized":"Not authorized to perform this operation."
   }
   

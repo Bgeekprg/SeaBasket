@@ -212,3 +212,18 @@ async def delete_product(
     except Exception as e:
         db.rollback()
         return {"error": localization.gettext(f"{e}")}
+
+
+@router.get(
+    "/trending", status_code=status.HTTP_200_OK, response_model=List[ProductList]
+)
+async def get_trending_products(db: db_dependency, limit: int = 5):
+
+    trending_products = (
+        db.query(Product)
+        .filter(Product.isAvailable == True)
+        .order_by(Product.rating.desc())
+        .limit(limit)
+        .all()
+    )
+    return trending_products

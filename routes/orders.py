@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Annotated, List, Optional
 from fastapi import APIRouter, Depends, Form, HTTPException, Request, status
 from pydantic import BaseModel, Field
@@ -24,6 +25,18 @@ user_dependency = Annotated[dict, Depends(get_current_user)]
 
 class OrderCreate(BaseModel):
     shipping_address: str = Field(..., min_length=5, max_length=500)
+
+
+class OrderDetailsReturn(BaseModel):
+    id: int
+    orderId: int
+    productId: int
+    name: str
+    price: float
+    quantity: int
+    discount: int
+    createdAt: datetime
+    updatedAt: datetime
 
 
 @router.get("/")
@@ -57,9 +70,30 @@ async def get_order_details(
     user: user_dependency,
 ):
     localization = request.state.localization
-    order_details = db.query(OrderDetail).filter(OrderDetail.orderId == id).all()
+    order_details = (
+        db.query(OrderDetail, Product.name)
+        .join(Product, Product.id == OrderDetail.productId)
+        .filter(OrderDetail.orderId == id)
+        .all()
+    )
+    # order_details = db.query(OrderDetail).filter(OrderDetail.orderId == id).all()
     if order_details != None:
-        return order_details
+
+        response = [
+            OrderDetailsReturn(
+                id=order_detail.id,
+                orderId=order_detail.orderId,
+                productId=order_detail.productId,
+                name=name,
+                price=order_detail.price,
+                quantity=order_detail.quantity,
+                discount=order_detail.discount,
+                createdAt=order_detail.createdAt,
+                updatedAt=order_detail.updatedAt,
+            )
+            for order_detail, name in order_details
+        ]
+        return response
     else:
         raise HTTPException(
             status_code=404, detail=localization.gettext("order_not_found")
@@ -84,7 +118,7 @@ async def confirm_order(
 
     for item in cart_items:
         product = db.query(Product).filter(Product.id == item.productId).first()
-        # Check for product existence and sufficient stock
+
         if not product:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -96,17 +130,28 @@ async def confirm_order(
                 detail=localization.gettext("insufficient_stock").format(product.name),
             )
         subtotal = float(product.price * item.quantity)
-        total_amount += subtotal
 
-        order_details.append(
-            OrderDetail(
-                productId=item.productId,
-                quantity=item.quantity,
-                price=product.price,
-                discount=0,
+        if product.discount:
+            discount_amount = (product.discount / 100) * subtotal
+            subtotal -= discount_amount
+            order_details.append(
+                OrderDetail(
+                    productId=item.productId,
+                    quantity=item.quantity,
+                    price=product.price,
+                    discount=discount_amount,
+                )
             )
-        )
-
+        else:
+            order_details.append(
+                OrderDetail(
+                    productId=item.productId,
+                    quantity=item.quantity,
+                    price=product.price,
+                    discount=0,
+                )
+            )
+        total_amount += subtotal
     try:
         new_order = Order(
             userId=user["id"],
@@ -117,7 +162,7 @@ async def confirm_order(
             paymentStatus="pending",
         )
         db.add(new_order)
-        db.flush()  # Assign an order ID to new_order
+        db.flush()
 
         for detail in order_details:
             detail.orderId = new_order.id
@@ -162,6 +207,11 @@ async def update_order_status(
 
     if status not in ["pending", "shipped", "delivered", "cancelled"]:
         raise HTTPException(status_code=400, detail="Invalid status")
+
+    if status in ["shipped", "delivered"] and user["role"] != "admin":
+        raise HTTPException(
+            status_code=403, detail=localization.gettext("not_authorized")
+        )
 
     order.orderStatus = status
     db.commit()

@@ -132,7 +132,7 @@ class OrderDetail(Base):
     productId = Column(Integer, ForeignKey("products.id"), nullable=False)
     quantity = Column(Integer, default=1)
     price = Column(DECIMAL(10, 2), nullable=False)
-    discount = Column(DECIMAL(5, 2), default=0)
+    discount = Column(DECIMAL(7, 2), default=0)
     createdAt = Column(TIMESTAMP, default=func.current_timestamp())
     updatedAt = Column(
         TIMESTAMP, default=func.current_timestamp(), onupdate=func.current_timestamp()

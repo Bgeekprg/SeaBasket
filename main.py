@@ -45,7 +45,7 @@ class Localization:
 
 class LocalizationMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
-        lang = request.headers.get("Accept-Language", "ja")
+        lang = request.headers.get("Accept-Language", "en")
 
         localization = Localization(lang)
         request.state.localization = localization
