@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from datetime import datetime
 from typing import Annotated, Optional
@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from database import SessionLocal
 from models import Category
+from routes.auth import get_current_user
 
 router = APIRouter(prefix="/categories", tags=["Category"])
 
@@ -40,6 +41,14 @@ def get_db():
 
 
 db_dependency = Annotated[Session, Depends(get_db)]
+user_dependency = Annotated[dict, Depends(get_current_user)]
+
+
+def admin_required(user):
+    if user["role"] != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Only admins can perform"
+        )
 
 
 @router.get("/")
@@ -53,7 +62,10 @@ async def get_category(db: db_dependency, category_id: int):
 
 
 @router.post("/")
-async def create_category(db: db_dependency, category: CategoryCreate):
+async def create_category(
+    db: db_dependency, user: user_dependency, category: CategoryCreate
+):
+    admin_required(user)
     db_category = Category(
         categoryName=category.categoryName,
         status=category.status,
@@ -65,7 +77,10 @@ async def create_category(db: db_dependency, category: CategoryCreate):
 
 
 @router.put("/{id}")
-def update_category(db: db_dependency, category_id: int, category: CategoryUpdate):
+def update_category(
+    db: db_dependency, user: user_dependency, category_id: int, category: CategoryUpdate
+):
+    admin_required(user)
     db_category = db.query(Category).filter(Category.id == category_id).first()
     if db_category:
         if category.categoryName:
@@ -78,7 +93,8 @@ def update_category(db: db_dependency, category_id: int, category: CategoryUpdat
 
 
 @router.delete("/{id}")
-def delete_category(db: db_dependency, category_id: int):
+def delete_category(db: db_dependency, user: user_dependency, category_id: int):
+    admin_required(user)
     db_category = db.query(Category).filter(Category.id == category_id).first()
     if db_category:
         db.delete(db_category)
