@@ -9,7 +9,7 @@ from routes import auth, carts, categories, products, orders, review_ratings, us
 from dotenv import load_dotenv
 import json
 
-models.Base.metadata.create_all(bind=engine)
+# models.Base.metadata.create_all(bind=engine)
 
 
 app = FastAPI()
