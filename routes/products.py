@@ -2,9 +2,9 @@ from typing import Annotated, List, Optional
 from fastapi import APIRouter, Depends, Form, HTTPException, Request, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
-from sqlalchemy import or_
+from sqlalchemy import or_, text
 from database import SessionLocal
-from models import Product
+from models import Product, ProductImage
 from routes.auth import get_current_user
 
 
@@ -30,6 +30,11 @@ class ProductUpdate(BaseModel):
     categoryId: Optional[int] = None
     productUrl: Optional[str] = None
     isAvailable: Optional[bool] = None
+
+
+class ProductImagesCreate(BaseModel):
+    productId: int = Field(...)
+    imageUrl: str = Field(..., min_length=5)
 
 
 def get_db():
@@ -102,7 +107,25 @@ async def get_product_details(id: int, db: db_dependency, request: Request):
 
     product = db.query(Product).filter(Product.id == id).first()
     if product:
-        return product
+        product_images = (
+            db.query(ProductImage).filter(ProductImage.productId == id).all()
+        )
+
+        images = [image.imageUrl for image in product_images]
+
+        product_details = {
+            "id": product.id,
+            "name": product.name,
+            "description": product.description,
+            "price": product.price,
+            "discount": product.discount,
+            "categoryId": product.categoryId,
+            "rating": product.rating,
+            "isAvailable": product.isAvailable,
+            "images": images,
+        }
+        return product_details
+
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
         detail=localization.gettext("product_not_found"),
@@ -227,3 +250,63 @@ async def delete_product(
     except Exception as e:
         db.rollback()
         return {"error": localization.gettext(f"{e}")}
+
+
+@router.post("/product_images")
+async def add_product_images(
+    request: Request,
+    user: user_dependency,
+    db: db_dependency,
+    product_images: ProductImagesCreate,
+):
+    admin_required(user)
+    localization = request.state.localization
+    product = db.query(Product).filter(Product.id == product_images.productId).first()
+    if product:
+        image = ProductImage(
+            productId=product_images.productId, imageUrl=product_images.imageUrl
+        )
+        db.add(image)
+        db.commit()
+        db.refresh(image)
+        return {"success": "Product image added successfully"}
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=localization.gettext("product_not_found"),
+        )
+
+
+@router.get("/product_images/{product_id}")
+async def get_product_images(request: Request, db: db_dependency, product_id: int):
+    localization = request.state.localization
+    product = db.query(Product).filter(Product.id == product_id).first()
+    if not product:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=localization.gettext("product_not_found"),
+        )
+    images = db.query(ProductImage).filter(ProductImage.productId == product_id).all()
+    if images:
+        return images
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail=localization.gettext("product_images_not_found"),
+    )
+
+
+@router.delete("/product_images/{image_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_product_images(
+    image_id: int, request: Request, user: user_dependency, db: db_dependency
+):
+    admin_required(user)
+    localization = request.state.localization
+    image = db.query(ProductImage).filter(ProductImage.id == image_id).first()
+    if image:
+        db.execute(text(f"delete from productImages where id={image.id}"))
+        db.commit()
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=localization.gettext("product_images_not_found"),
+        )
