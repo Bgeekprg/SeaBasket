@@ -96,8 +96,8 @@ async def get_products_list(
     return products
 
 
-@router.get("/products/{id}")
-async def get_product(id: int, db: db_dependency, request: Request):
+@router.get("/{id}")
+async def get_product_details(id: int, db: db_dependency, request: Request):
     localization = request.state.localization
 
     product = db.query(Product).filter(Product.id == id).first()
@@ -109,7 +109,22 @@ async def get_product(id: int, db: db_dependency, request: Request):
     )
 
 
-@router.post("/add", status_code=status.HTTP_201_CREATED)
+@router.get(
+    "/trending", status_code=status.HTTP_200_OK, response_model=List[ProductList]
+)
+async def get_trending_products(db: db_dependency, limit: int = 5):
+
+    trending_products = (
+        db.query(Product)
+        .filter(Product.isAvailable == True)
+        .order_by(Product.rating.desc())
+        .limit(limit)
+        .all()
+    )
+    return trending_products
+
+
+@router.post("/", status_code=status.HTTP_201_CREATED)
 async def add_new_product(
     request: Request,
     user: user_dependency,
@@ -149,7 +164,7 @@ async def add_new_product(
         )
 
 
-@router.put("/update")
+@router.put("/")
 async def update_product(
     request: Request, db: db_dependency, product: ProductUpdate, user: user_dependency
 ):
@@ -212,18 +227,3 @@ async def delete_product(
     except Exception as e:
         db.rollback()
         return {"error": localization.gettext(f"{e}")}
-
-
-@router.get(
-    "/trending", status_code=status.HTTP_200_OK, response_model=List[ProductList]
-)
-async def get_trending_products(db: db_dependency, limit: int = 5):
-
-    trending_products = (
-        db.query(Product)
-        .filter(Product.isAvailable == True)
-        .order_by(Product.rating.desc())
-        .limit(limit)
-        .all()
-    )
-    return trending_products
