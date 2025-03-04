@@ -34,7 +34,7 @@ class OrderDetailsReturn(BaseModel):
     name: str
     price: float
     quantity: int
-    discount: int
+    discount: float
     createdAt: datetime
     updatedAt: datetime
 
