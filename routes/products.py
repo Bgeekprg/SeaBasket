@@ -66,6 +66,8 @@ async def get_products_list(
     min_rating: float = None,
     discount: int = None,
     sort_by: str = None,
+    page: int = 1,
+    page_size: int = 10,
 ):
     query = db.query(Product)
 
@@ -89,6 +91,8 @@ async def get_products_list(
         elif sort_by == "name":
             query = query.order_by(Product.name.asc())
     query = query.filter(Product.isAvailable == True)
+    offset = (page - 1) * page_size
+    query = query.offset(offset).limit(page_size)
 
     products = query.with_entities(
         Product.id,
@@ -122,6 +126,7 @@ async def get_product_details(id: int, db: db_dependency, request: Request):
             "categoryId": product.categoryId,
             "rating": product.rating,
             "isAvailable": product.isAvailable,
+            "imageUrl": product.productUrl,
             "images": images,
         }
         return product_details
@@ -178,7 +183,7 @@ async def add_new_product(
         db.add(product)
         db.commit()
         db.refresh(product)
-        return {"success": localization.gettext("product_added_successfully")}
+        return {"success": localization.gettext("product_added")}
     except Exception as e:
         db.rollback()
         raise HTTPException(
