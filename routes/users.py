@@ -73,6 +73,57 @@ class ResetPassword(BaseModel):
     email: EmailStr
 
 
+class UserList(BaseModel):
+    id: int
+    name: str
+    email: str
+    phoneNumber: Optional[str] = None
+    profilePic: Optional[str] = None
+    role: str
+    isVerified: bool
+    createdAt: datetime
+    updatedAt: datetime
+
+
+def admin_required(localization, user):
+    if user["role"] != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=localization.gettext("admin_required"),
+        )
+
+
+@router.get("/", response_model=List[UserList])
+async def read_users(
+    request: Request,
+    user: user_dependency,
+    db: db_dependency,
+    page: int = 1,
+    page_size: int = 10,
+):
+    localization = request.state.localization
+    admin_required(localization, user)
+    query = db.query(User).order_by(User.id.desc())
+    offset = (page - 1) * page_size
+    query = query.offset(offset).limit(page_size)
+    users = query.all()
+
+    return [
+        UserList(
+            id=user.id,
+            name=user.name,
+            email=user.email,
+            phoneNumber=user.phoneNumber,
+            profilePic=user.profilePic,
+            role=user.role,
+            isVerified=user.isVerified,
+            createdAt=user.createdAt,
+            updatedAt=user.updatedAt,
+        )
+        for user in users
+    ]
+
+
 @router.get("/profile")
 async def get_user_profile(request: Request, db: db_dependency, user: user_dependency):
     localization = request.state.localization
@@ -82,7 +133,7 @@ async def get_user_profile(request: Request, db: db_dependency, user: user_depen
     return {"error": localization.gettext("user_not_found")}
 
 
-@router.put("/update-profile", response_model=UserUpdate)
+@router.put("/profile", response_model=UserUpdate)
 async def update_user_profile(
     user_data: UserUpdate, db: db_dependency, cur_user: user_dependency
 ):
