@@ -41,7 +41,12 @@ class OrderDetailsReturn(BaseModel):
 
 @router.get("/")
 async def get_orders(
-    request: Request, db: db_dependency, user: user_dependency, order_id: int = None
+    request: Request,
+    db: db_dependency,
+    user: user_dependency,
+    order_id: int = None,
+    page: int = 1,
+    page_size: int = 10,
 ):
     localization = request.state.localization
     if order_id:
@@ -53,9 +58,14 @@ async def get_orders(
             )
         return orders
 
-    orders = db.query(Order).filter(Order.userId == user["id"]).all()
-    if orders:
-        return orders
+    order_count = db.query(Order).filter(Order.userId == user["id"]).count()
+    if order_count > 0:
+        query = db.query(Order).filter(Order.userId == user["id"])
+        query = query.order_by(Order.id.desc())
+        offset = (page - 1) * page_size
+        query = query.offset(offset).limit(page_size)
+        return query.all()
+
     else:
         raise HTTPException(
             status.HTTP_404_NOT_FOUND, detail=localization.gettext("order_not_found")
