@@ -108,7 +108,10 @@ async def login_user(
 ):
     user = (
         db.query(User)
-        .filter(or_(User.email == data.username, User.phoneNumber == data.username))
+        .filter(
+            or_(User.email == data.username, User.phoneNumber == data.username),
+            User.status == True,
+        )
         .first()
     )
     if user and bcrypt_context.verify(data.password, user.password):
