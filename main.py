@@ -5,7 +5,7 @@ from database import Base, SessionLocal, engine
 import models
 from starlette.middleware.base import BaseHTTPMiddleware
 from sqlalchemy.orm import Session
-from routes import auth, carts, categories, products, orders, review_ratings, users
+from routes import admin, auth, carts, categories, products, orders, review_ratings, users
 from dotenv import load_dotenv
 import json
 
@@ -73,3 +73,4 @@ app.include_router(carts.router)
 app.include_router(orders.router)
 app.include_router(users.router)
 app.include_router(review_ratings.router)
+app.include_router(admin.router)
