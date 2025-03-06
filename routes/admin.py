@@ -44,6 +44,23 @@ class UserUpdate(BaseModel):
     status: Optional[bool] = None
 
 
+class ProductUpdate(BaseModel):
+    id: int = Field(...)
+    name: Optional[str] = None
+    description: Optional[str] = None
+    stockQuantity: Optional[int] = None
+    price: Optional[float] = None
+    discount: Optional[int] = None
+    categoryId: Optional[int] = None
+    productUrl: Optional[str] = None
+    isAvailable: Optional[bool] = None
+
+
+class ProductImagesCreate(BaseModel):
+    productId: int = Field(...)
+    imageUrl: str = Field(..., min_length=5)
+
+
 def admin_required(localization, user):
     if user["role"] != "admin":
         raise HTTPException(
@@ -165,4 +182,151 @@ async def get_all_orders(
     else:
         raise HTTPException(
             status.HTTP_404_NOT_FOUND, detail=localization.gettext("order_not_found")
+        )
+
+
+@router.post("/product", status_code=status.HTTP_201_CREATED)
+async def add_new_product(
+    request: Request,
+    user: user_dependency,
+    db: db_dependency,
+    product_name: str = Form(...),
+    category_id: int = Form(...),
+    description: str = Form(...),
+    quantity: int = Form(...),
+    price: float = Form(...),
+    image_url: str = Form(default=None),
+    discount: int = Form(...),
+    is_available: bool = Form(...),
+):
+    localization = request.state.localization
+    try:
+        admin_required(localization, user)
+
+        product = Product(
+            name=product_name,
+            categoryId=category_id,
+            productUrl=image_url,
+            description=description,
+            stockQuantity=quantity,
+            price=price,
+            discount=discount,
+            isAvailable=is_available,
+        )
+        db.add(product)
+        db.commit()
+        db.refresh(product)
+        return {"success": localization.gettext("product_added")}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"{localization.gettext('failed_to_add_product')}: {str(e)}",
+        )
+
+
+@router.put("/product")
+async def update_product(
+    request: Request, db: db_dependency, product: ProductUpdate, user: user_dependency
+):
+    localization = request.state.localization
+    admin_required(localization, user)
+
+    data = db.query(Product).filter(Product.id == product.id).first()
+
+    if data:
+        if product.name != None:
+            data.name = product.name
+        if product.categoryId != None:
+            data.categoryId = product.categoryId
+        if product.productUrl != None:
+            data.productUrl = product.productUrl
+        if product.description != None:
+            data.description = product.description
+        if product.stockQuantity != None:
+            data.stockQuantity = product.stockQuantity
+        if product.price != None:
+            data.price = product.price
+        if product.discount != None:
+            data.discount = product.discount
+        if product.isAvailable != None:
+            data.isAvailable = product.isAvailable
+
+        db.add(data)
+        db.commit()
+        db.refresh(data)
+        return {"success": localization.gettext("product_updated")}
+
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"{localization.gettext('product_not_found')}",
+        )
+
+
+@router.delete("/product/{id}")
+async def delete_product(
+    request: Request, db: db_dependency, id: int, user: user_dependency
+):
+    localization = request.state.localization
+    db.begin()
+    try:
+        admin_required(localization, user)
+        data = db.query(Product).filter(Product.id == id).first()
+        if data:
+            order_details = (
+                db.query(OrderDetail).filter(OrderDetail.productId == id).first()
+            )
+            if order_details:
+                return {"error": localization.gettext("product_has_orders")}
+
+            db.delete(data)
+            db.commit()
+            return {"success": localization.gettext("product_deleted")}
+        else:
+            return {"error": localization.gettext("product_not_found")}
+    except Exception as e:
+        db.rollback()
+        return {"error": localization.gettext(f"{e}")}
+
+
+@router.post("/product_images")
+async def add_product_images(
+    request: Request,
+    user: user_dependency,
+    db: db_dependency,
+    product_images: ProductImagesCreate,
+):
+    localization = request.state.localization
+    admin_required(localization, user)
+    product = db.query(Product).filter(Product.id == product_images.productId).first()
+    if product:
+        image = ProductImage(
+            productId=product_images.productId, imageUrl=product_images.imageUrl
+        )
+        db.add(image)
+        db.commit()
+        db.refresh(image)
+        return {"success": localization.gettext("product_image_add_success")}
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=localization.gettext("product_not_found"),
+        )
+
+
+@router.delete("/product_images/{image_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_product_images(
+    image_id: int, request: Request, user: user_dependency, db: db_dependency
+):
+    admin_required(localization, user)
+    localization = request.state.localization
+    image = db.query(ProductImage).filter(ProductImage.id == image_id).first()
+    if image:
+        db.execute(text(f"delete from productImages where id={image.id}"))
+        db.commit()
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=localization.gettext("product_images_not_found"),
         )
