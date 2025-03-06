@@ -16,9 +16,8 @@ class ProductList(BaseModel):
     name: str
     price: float
     discount: Optional[int]
-    categoryId: int
+    categoryId: Optional[int]
     rating: Optional[float]
-
 
 
 def get_db():
@@ -136,8 +135,6 @@ async def get_trending_products(db: db_dependency, limit: int = 5):
     return trending_products
 
 
-
-
 @router.get("/product_images/{product_id}")
 async def get_product_images(request: Request, db: db_dependency, product_id: int):
     localization = request.state.localization
@@ -154,4 +151,3 @@ async def get_product_images(request: Request, db: db_dependency, product_id: in
         status_code=status.HTTP_404_NOT_FOUND,
         detail=localization.gettext("product_images_not_found"),
     )
-
